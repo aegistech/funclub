@@ -2,8 +2,10 @@
 const nextConfig = {
   experimental: {
     turbopack: false,
-    swcMinify: true,
   },
+
+  // Disable SWC minify to force webpack for better control over deps
+  swcMinify: false,
 
   transpilePackages: [
     'viem',
@@ -13,24 +15,30 @@ const nextConfig = {
     '@tanstack/react-query',
   ],
 
-  webpack: (config, { isServer, dev }) => {
-    // Exclude test files from specific packages (fixes thread-stream/test/helper.js error)
+  // Force webpack for transpile (overrides SWC for these packages)
+  webpack: (config, { isServer, dev, buildId }) => {
+    // Externalize test files to skip them entirely (fixes module not found)
+    config.externals = [
+      ...(config.externals || []),
+      (context, request, callback) => {
+        if (/\/(test|__tests__)\/.*$/.test(request)) {
+          return callback(null, `commonjs ${request}`);  // Treat test files as external
+        }
+        callback();
+      },
+    ];
+
+    // Exclude specific test paths in module resolution
     if (!dev && !isServer) {
-      config.module.rules.push({
-        oneOf: [
-          {
-            test: /\.(js|jsx|ts|tsx)$/,
-            enforce: 'pre',
-            exclude: /node_modules\/(thread-stream|viem|@walletconnect|rainbowkit).*\/(test|__tests__)/,
-            use: [],
-          },
-          // Preserve existing rules
-          ...(config.module.rules.find(rule => rule.oneOf)?.oneOf || []),
-        ],
-      });
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        ...{
+          '(thread-stream|viem|@walletconnect)/.*test.*': false,  // Alias test to false (skip)
+        },
+      };
     }
 
-    // Polyfill fallbacks for browser (required by viem/rainbowkit)
+    // Fallback for node modules
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -40,4 +48,12 @@ const nextConfig = {
         dns: false,
         child_process: false,
         stream: false,
-        crypto
+        crypto: false,
+      };
+    }
+
+    return config;
+  },
+};
+
+export default nextConfig;
