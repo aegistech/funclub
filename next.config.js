@@ -1,10 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    turbopack: false,           // Force use Webpack instead of Turbopack
+    turbopack: false,  // Disable Turbopack to fix build errors with deps
   },
 
-  transpilePackages: ["magni", "viem", "@rainbow-me/rainbowkit"],
+  transpilePackages: [
+    "magni",
+    "viem",
+    "@rainbow-me/rainbowkit"
+  ],
 
   webpack: (config, { isServer }) => {
     if (!isServer) {
@@ -14,6 +18,7 @@ const nextConfig = {
         net: false,
         tls: false,
         dns: false,
+        child_process: false
       };
     }
     return config;
