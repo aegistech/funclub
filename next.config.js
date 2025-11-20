@@ -1,18 +1,25 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    esmExternals: false,
+    // Tắt Turbopack để dùng Webpack ổn định (bắt buộc với config fallback fs)
+    turbopack: false,
   },
-  transpilePackages: ['wagmi', 'viem', '@rainbow-me/rainbowkit'],
+
+  transpilePackages: ["magni", "viem", "@rainbow-me/rainbowkit"],
+
+  // Fix lỗi fs fallback cho các package chạy trên client
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
         fs: false,
+        net: false,
+        tls: false,
+        dns: false,
       };
     }
     return config;
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;
