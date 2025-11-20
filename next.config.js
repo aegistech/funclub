@@ -1,14 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    turbopack: false,  // Disable Turbopack to fix build errors with deps
+    turbopack: false,  // Disable Turbopack to fix build conflicts with viem/rainbowkit deps
   },
 
   transpilePackages: [
-    "magni",
     "viem",
     "@rainbow-me/rainbowkit"
-  ],
+  ],  // Transpile web3 packages to avoid module type errors
 
   webpack: (config, { isServer }) => {
     if (!isServer) {
@@ -19,7 +18,7 @@ const nextConfig = {
         tls: false,
         dns: false,
         child_process: false
-      };
+      };  // Fallback for node-like modules in browser (common with viem)
     }
     return config;
   },
